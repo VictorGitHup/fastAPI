@@ -14,12 +14,12 @@ app = FastAPI()
 
 UPLOAD_FOLDER = "./uploadedimages"
 SVG_FOLDER = "./convertedimages"
-BASE_URL = "http://localhost:8000"
+BASE_URL = "http://3.15.21.180"
 MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024  # 10 MB
-CLEANUP_INTERVAL_HOURS = 4  # Intervalo de tiempo para ejecutar la limpieza en horas
-FILE_LIFETIME_HOURS = 12  # Tiempo de vida de los archivos en horas
+CLEANUP_INTERVAL_MINUTES = 5  # Intervalo de tiempo para ejecutar la limpieza en minutos
+FILE_LIFETIME_MINUTES = 6  # Tiempo de vida de los archivos en minutos
 
-ALLOWED_EXTENSIONS = {'jpeg', 'jpg', 'png','heic','heif'}
+ALLOWED_EXTENSIONS = {'jpeg', 'jpg', 'png', 'heic', 'heif'}
 
 if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
@@ -37,14 +37,23 @@ def clean_filename(filename):
     return re.sub(r"[^a-zA-Z0-9_.-]", "", filename)
 
 def add_conversion_metadata(svg_path):
-    root = ET.parse(svg_path).getroot()
-    
-    # Agrega un nuevo elemento para la fecha y hora de conversión
-    conversion_metadata = ET.SubElement(root, "conversion_metadata")
-    conversion_metadata.set("conversion_datetime", str(datetime.now()))
-    
-    # Guarda el archivo SVG actualizado
-    ET.ElementTree(root).write(svg_path)
+    try:
+        # Lee el contenido del archivo SVG
+        tree = ET.parse(svg_path)
+        root = tree.getroot()
+
+        # Agrega un nuevo elemento para la fecha y hora de conversión sin espacio de nombres
+        conversion_metadata = ET.Element("conversion_metadata")
+        root.append(conversion_metadata)
+
+        # Añade el atributo al elemento conversion_metadata
+        conversion_metadata.set("conversion_datetime", str(datetime.now()))
+
+        # Guarda el archivo SVG actualizado
+        tree.write(svg_path)
+    except Exception as e:
+        # Maneja posibles errores durante la adición de metadatos
+        pass
 
 def cleanup_files():
     try:
@@ -54,7 +63,7 @@ def cleanup_files():
         for filename in os.listdir(UPLOAD_FOLDER):
             file_path = os.path.join(UPLOAD_FOLDER, filename)
             creation_time = datetime.fromtimestamp(os.path.getctime(file_path))
-            if current_time - creation_time > timedelta(hours=FILE_LIFETIME_HOURS):
+            if current_time - creation_time > timedelta(minutes=FILE_LIFETIME_MINUTES):
                 os.remove(file_path)
 
         # Elimina archivos de conversión
@@ -64,7 +73,7 @@ def cleanup_files():
                 root = ET.parse(svg_path).getroot()
                 conversion_datetime_str = root.find(".//conversion_metadata").attrib["conversion_datetime"]
                 conversion_datetime = datetime.strptime(conversion_datetime_str, "%Y-%m-%d %H:%M:%S.%f")
-                if current_time - conversion_datetime > timedelta(hours=FILE_LIFETIME_HOURS):
+                if current_time - conversion_datetime > timedelta(minutes=FILE_LIFETIME_MINUTES):
                     os.remove(svg_path)
             except Exception as e:
                 # Maneja posibles errores al analizar el archivo SVG
@@ -74,7 +83,7 @@ def cleanup_files():
         pass
 
 def scheduled_cleanup():
-    schedule.every(CLEANUP_INTERVAL_HOURS).hours.do(cleanup_files)
+    schedule.every(CLEANUP_INTERVAL_MINUTES).minutes.do(cleanup_files)
     while True:
         schedule.run_pending()
         # Evita el uso excesivo de la CPU
