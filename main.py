@@ -9,6 +9,7 @@ from datetime import datetime, timedelta
 import schedule
 import threading
 import time
+import httpx
 
 app = FastAPI()
 
@@ -147,3 +148,26 @@ async def get_svg(svg_filename: str):
             return JSONResponse(content={"error": "SVG no encontrado"}, status_code=404)
     except Exception as e:
         return JSONResponse(content={"error": f"An error occurred: {str(e)}"}, status_code=500)
+    
+def is_link_active(url: str) -> bool:
+    try:
+        with httpx.AsyncClient() as client:
+            # Realizar una solicitud HEAD a la URL proporcionada
+            response = client.head(url)
+            
+            # Verificar si la solicitud fue exitosa (código de estado 200)
+            return response.status_code == 200
+    except httpx.HTTPError:
+        return False
+
+@app.head("/check_link")
+async def check_link(url: str):
+    try:
+        # Verificar la disponibilidad del enlace
+        if await is_link_active(url):
+            return {"status": "active"}
+        else:
+            raise HTTPException(status_code=404, detail="Enlace no disponible")
+    except Exception as e:
+        # Manejar excepciones según sea necesario
+        raise HTTPException(status_code=500, detail=f"Error interno del servidor: {str(e)}")
