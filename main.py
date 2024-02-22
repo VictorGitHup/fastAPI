@@ -149,18 +149,19 @@ async def get_svg(svg_filename: str):
     except Exception as e:
         return JSONResponse(content={"error": f"An error occurred: {str(e)}"}, status_code=500)
     
-def is_link_active(url: str) -> bool:
+    
+async def is_link_active(url: str) -> bool:
     try:
-        with httpx.AsyncClient() as client:
+        async with httpx.AsyncClient() as client:
             # Realizar una solicitud HEAD a la URL proporcionada
-            response = client.head(url)
+            response = await client.head(url)
             
             # Verificar si la solicitud fue exitosa (código de estado 200)
             return response.status_code == 200
     except httpx.HTTPError:
         return False
 
-@app.head("/check_link")
+@app.head("/check_link", include_in_schema=False)
 async def check_link(url: str):
     try:
         # Verificar la disponibilidad del enlace
