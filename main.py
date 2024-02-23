@@ -15,7 +15,7 @@ app = FastAPI()
 
 UPLOAD_FOLDER = "./uploadedimages"
 SVG_FOLDER = "./convertedimages"
-BASE_URL = "http://3.15.21.180"
+BASE_URL = "http://3.22.240.9"
 MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024  # 10 MB
 CLEANUP_INTERVAL_HOURS = 1  # Intervalo de tiempo para ejecutar la limpieza en horas
 FILE_LIFETIME_HOURS = 1  # Tiempo de vida de los archivos en horas
