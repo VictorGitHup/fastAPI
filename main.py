@@ -150,25 +150,19 @@ async def get_svg(svg_filename: str):
         return JSONResponse(content={"error": f"An error occurred: {str(e)}"}, status_code=500)
     
     
-async def is_link_active(url: str) -> bool:
+async def is_link_active(svg_url: str) -> bool:
     try:
         async with httpx.AsyncClient() as client:
-            # Realizar una solicitud HEAD a la URL proporcionada
-            response = await client.head(url)
-            
-            # Verificar si la solicitud fue exitosa (código de estado 200)
+            response = await client.head(svg_url)
             return response.status_code == 200
     except httpx.HTTPError:
         return False
 
-@app.head("/convertedimages/", include_in_schema=False)
-async def check_link(url: str):
-    try:
-        # Verificar la disponibilidad del enlace
-        if await is_link_active(url):
-            return {"status": "active"}
-        else:
-            raise HTTPException(status_code=404, detail="Enlace no disponible")
-    except Exception as e:
-        # Manejar excepciones según sea necesario
-        raise HTTPException(status_code=500, detail=f"Error interno del servidor: {str(e)}")
+@app.head("/convertedimages/{image_path:path}")
+async def handle_head_request(image_path: str):
+    svg_url = f"/convertedimages/{image_path}"
+
+    if await is_link_active(svg_url):
+        return {"status": "active"}
+    else:
+        raise HTTPException(status_code=404, detail="Enlace no disponible")
