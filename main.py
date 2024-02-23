@@ -161,7 +161,7 @@ async def is_link_active(url: str) -> bool:
     except httpx.HTTPError:
         return False
 
-@app.head("/check_link", include_in_schema=False)
+@app.head("/convertedimages/", include_in_schema=False)
 async def check_link(url: str):
     try:
         # Verificar la disponibilidad del enlace
